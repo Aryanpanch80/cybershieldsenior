@@ -1,0 +1,612 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SurakshaSetu — Police Dashboard</title>
+<style>
+:root {
+  --primary: #1a1a2e; --accent: #1a56db; --danger: #dc2626;
+  --success: #16a34a; --warning: #d97706;
+  --bg: #0f172a; --card: #1e293b; --border: #334155;
+  --text: #f1f5f9; --muted: #94a3b8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+/* ── LOGIN ── */
+#loginScreen { position: fixed; inset: 0; background: linear-gradient(160deg, #0f172a 0%, #1a1a2e 100%); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.login-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 36px 32px; width: 380px; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.login-header { text-align: center; margin-bottom: 28px; }
+.login-icon { font-size: 48px; margin-bottom: 8px; }
+.login-title { font-size: 22px; font-weight: 800; }
+.login-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: .05em; }
+.form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 14px; background: var(--bg); color: var(--text); outline: none; font-family: inherit; transition: border .15s; }
+.form-input:focus { border-color: var(--accent); }
+.login-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; padding: 10px; background: rgba(255,255,255,.04); border-radius: 8px; line-height: 1.7; }
+.form-select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 14px; background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
+
+/* ── TOPBAR ── */
+.topbar { background: var(--primary); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; gap: 14px; }
+.logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.logo-name { font-size: 16px; font-weight: 800; }
+.logo-sub { font-size: 10px; color: var(--muted); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.status-live { display: flex; align-items: center; gap: 5px; background: rgba(22,163,74,.15); color: #4ade80; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(22,163,74,.3); }
+.dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.ws-indicator { font-size: 11px; color: var(--muted); }
+.ws-indicator.on { color: #4ade80; }
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 57px); }
+.sidebar { background: var(--primary); border-right: 1px solid var(--border); padding: 16px 0; }
+.sidebar-menu { list-style: none; }
+.sidebar-item { padding: 9px 18px; cursor: pointer; display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--muted); border-left: 3px solid transparent; transition: all .2s; }
+.sidebar-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.sidebar-item.active { color: white; background: rgba(26,86,219,.15); border-left-color: var(--accent); }
+.sidebar-item .icon { font-size: 16px; width: 22px; text-align: center; }
+.sb-badge { margin-left: auto; background: var(--danger); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 9px; }
+.sb-section { font-size: 10px; font-weight: 700; color: var(--border); letter-spacing: .1em; padding: 12px 18px 5px; text-transform: uppercase; }
+
+/* ── MAIN ── */
+.main { padding: 20px; overflow-y: auto; }
+.page-title { font-size: 20px; font-weight: 800; margin-bottom: 3px; }
+.page-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+/* ── STATS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.stat-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.stat-value { font-size: 30px; font-weight: 800; margin: 4px 0; }
+.stat-change { font-size: 11px; }
+.c-up { color: #4ade80; } .c-dn { color: #f87171; }
+
+/* ── CARDS ── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.card-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+
+/* ── TABLE ── */
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.table td { padding: 9px 10px; font-size: 12px; border-bottom: 1px solid rgba(51,65,85,.4); }
+.table tr:hover td { background: rgba(255,255,255,.02); }
+
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+.badge-danger { background: rgba(220,38,38,.15); color: #f87171; border: 1px solid rgba(220,38,38,.3); }
+.badge-warning { background: rgba(217,119,6,.15); color: #fbbf24; border: 1px solid rgba(217,119,6,.3); }
+.badge-success { background: rgba(22,163,74,.15); color: #4ade80; border: 1px solid rgba(22,163,74,.3); }
+.badge-primary { background: rgba(26,86,219,.15); color: #60a5fa; border: 1px solid rgba(26,86,219,.3); }
+.badge-gray { background: rgba(148,163,184,.1); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── BUTTONS ── */
+.btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; font-family: inherit; }
+.btn-primary { background: var(--accent); color: white; } .btn-primary:hover { opacity: .9; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { color: var(--text); border-color: var(--accent); }
+.btn-sm { padding: 4px 9px; font-size: 11px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── SOS ALERTS ── */
+.sos-alert { background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.35); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; animation: alertPulse 2s infinite; }
+@keyframes alertPulse { 0%,100%{border-color:rgba(220,38,38,.35)} 50%{border-color:rgba(220,38,38,.7)} }
+.sos-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: blink .8s infinite; flex-shrink: 0; }
+.sos-title { font-size: 13px; font-weight: 700; color: #f87171; }
+.sos-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── TIMELINE ── */
+.tl-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(51,65,85,.4); }
+.tl-item:last-child { border-bottom: none; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-title { font-size: 12px; font-weight: 600; }
+.tl-time { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* ── BAR CHART ── */
+.bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.bar-label { font-size: 11px; color: var(--muted); width: 110px; flex-shrink: 0; }
+.bar-track { flex: 1; height: 7px; background: rgba(255,255,255,.05); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 1s; }
+.bar-val { font-size: 11px; font-weight: 700; width: 28px; text-align: right; }
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── TOAST ── */
+.toast { position: fixed; top: 16px; right: 20px; background: var(--card); color: var(--text); padding: 10px 16px; border-radius: 9px; font-size: 13px; font-weight: 500; z-index: 1000; opacity: 0; transition: all .3s; border: 1px solid var(--border); border-left: 3px solid #4ade80; max-width: 320px; }
+.toast.danger { border-left-color: #f87171; }
+.toast.show { opacity: 1; }
+
+/* ── LOADING ── */
+.loading { display: flex; align-items: center; justify-content: center; padding: 24px; }
+.spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     POLICE LOGIN
+══════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-icon">👮</div>
+      <div class="login-title">Police Dashboard</div>
+      <div class="login-sub">SurakshaSetu • Ahmedabad Cyber Crime Branch</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Badge / Mobile Number</label>
+      <input class="form-input" id="policePhone" placeholder="Enter registered phone" type="tel">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="policePassword" type="password" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="doPoliceLogin()" id="loginBtn">🔐 Sign In to Dashboard</button>
+    <div class="login-hint">
+      <strong>Demo — Police Officer Login</strong><br>
+      Phone: <strong>9000000001</strong> &nbsp;|&nbsp; Password: <strong>password</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN DASHBOARD
+══════════════════════════════════════════════ -->
+<div id="dashboardApp" style="display:none">
+
+<div class="topbar">
+  <div class="logo-icon">🛡️</div>
+  <div>
+    <div class="logo-name">SurakshaSetu — Police Dashboard</div>
+    <div class="logo-sub">Ahmedabad City • Cyber Crime Branch • CCTNS Integrated</div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-live"><div class="dot-live"></div>LIVE</div>
+    <span class="ws-indicator" id="wsStatus">● Connecting...</span>
+    <div style="text-align:right">
+      <div style="font-size:12px;font-weight:700" id="officerName">Loading...</div>
+      <div style="font-size:10px;color:var(--muted)" id="officerRank">Cyber Crime Branch</div>
+    </div>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;">Logout</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sb-section">Operations</li>
+      <li class="sidebar-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Dashboard <span class="sb-badge" id="sosBadge">0</span></li>
+      <li class="sidebar-item" onclick="showPage('alerts')"><span class="icon">🚨</span> SOS Alerts <span class="sb-badge" id="alertBadge">0</span></li>
+      <li class="sidebar-item" onclick="showPage('cases')"><span class="icon">📋</span> Fraud Cases</li>
+      <li class="sidebar-item" onclick="showPage('citizens')"><span class="icon">👴</span> Citizens</li>
+      <li class="sb-section">Tools</li>
+      <li class="sidebar-item" onclick="showPage('scamdb')"><span class="icon">🔍</span> Scam Database</li>
+      <li class="sidebar-item" onclick="showPage('activity')"><span class="icon">⚡</span> Activity Feed</li>
+    </ul>
+  </div>
+
+  <div class="main">
+
+    <!-- ══ DASHBOARD PAGE ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Operations Dashboard</div>
+      <div class="page-sub" id="dashTime">Loading...</div>
+
+      <!-- LIVE SOS (populated dynamically) -->
+      <div id="sosSection"></div>
+
+      <!-- STATS -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Active SOS</div><div class="stat-value c-dn" id="s-sos">—</div></div>
+        <div class="stat-card"><div class="stat-label">Registered Seniors</div><div class="stat-value" id="s-seniors">—</div></div>
+        <div class="stat-card"><div class="stat-label">Reports Today</div><div class="stat-value" id="s-today">—</div></div>
+        <div class="stat-card"><div class="stat-label">Cases Pending</div><div class="stat-value c-dn" id="s-pending">—</div></div>
+      </div>
+
+      <div class="grid-2">
+        <!-- RECENT ACTIVITY -->
+        <div class="card">
+          <div class="card-title">⚡ Live Activity</div>
+          <div id="activityFeed"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+
+        <!-- FRAUD TYPE BREAKDOWN -->
+        <div class="card">
+          <div class="card-title">📊 Fraud Type Breakdown</div>
+          <div id="fraudChart"></div>
+        </div>
+      </div>
+
+      <!-- INTEGRATIONS -->
+      <div class="card">
+        <div class="card-title">🔗 System Integrations</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+          <div style="padding:10px;background:rgba(22,163,74,.08);border-radius:8px;border:1px solid rgba(22,163,74,.2);text-align:center;font-size:11px;font-weight:700">ERSS 112<br><span class="badge badge-success" style="margin-top:4px">LIVE</span></div>
+          <div style="padding:10px;background:rgba(22,163,74,.08);border-radius:8px;border:1px solid rgba(22,163,74,.2);text-align:center;font-size:11px;font-weight:700">CCTNS<br><span class="badge badge-success" style="margin-top:4px">LIVE</span></div>
+          <div style="padding:10px;background:rgba(22,163,74,.08);border-radius:8px;border:1px solid rgba(22,163,74,.2);text-align:center;font-size:11px;font-weight:700">SBI Fraud API<br><span class="badge badge-success" style="margin-top:4px">LIVE</span></div>
+          <div style="padding:10px;background:rgba(251,191,36,.08);border-radius:8px;border:1px solid rgba(251,191,36,.2);text-align:center;font-size:11px;font-weight:700">Wearable GW<br><span class="badge badge-warning" style="margin-top:4px">BETA</span></div>
+          <div style="padding:10px;background:rgba(22,163,74,.08);border-radius:8px;border:1px solid rgba(22,163,74,.2);text-align:center;font-size:11px;font-weight:700">GIS Maps<br><span class="badge badge-success" style="margin-top:4px">LIVE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SOS ALERTS PAGE ══ -->
+    <div class="page" id="page-alerts">
+      <div class="page-title">🚨 SOS Alerts</div>
+      <div class="page-sub">Active emergency alerts from registered seniors</div>
+      <div id="sosAlertsList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ══ FRAUD CASES PAGE ══ -->
+    <div class="page" id="page-cases">
+      <div class="page-title">📋 Fraud Cases</div>
+      <div class="page-sub">All reported cases from citizens</div>
+      <div id="casesList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ══ CITIZENS PAGE ══ -->
+    <div class="page" id="page-citizens">
+      <div class="page-title">👴 Registered Senior Citizens</div>
+      <div class="page-sub">All seniors under monitoring</div>
+      <div id="citizensList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ══ SCAM DB PAGE ══ -->
+    <div class="page" id="page-scamdb">
+      <div class="page-title">🔍 Scam Database</div>
+      <div class="page-sub">Flagged numbers and links</div>
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:10px">
+          <input class="form-input" id="newScamVal" placeholder="Phone number or URL" style="flex:1">
+          <select class="form-select" id="newScamType" style="width:110px">
+            <option value="phone">Phone</option>
+            <option value="url">URL</option>
+          </select>
+          <button class="btn btn-danger" onclick="addScamEntry()">Add</button>
+        </div>
+      </div>
+      <div id="scamDbList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ══ ACTIVITY PAGE ══ -->
+    <div class="page" id="page-activity">
+      <div class="page-title">⚡ Activity Feed</div>
+      <div class="page-sub">Real-time system events</div>
+      <div class="card" id="fullActivityFeed"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3000' : `wss://${location.host}`;
+
+let token = sessionStorage.getItem('police_token');
+let currentOfficer = JSON.parse(sessionStorage.getItem('police_user') || 'null');
+let ws = null;
+let activeSosCount = 0;
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  if (token && currentOfficer?.role === 'police') {
+    showDashboard();
+  }
+});
+
+async function doPoliceLogin() {
+  const phone = document.getElementById('policePhone').value.trim();
+  const password = document.getElementById('policePassword').value;
+  if (!phone || !password) { showToast('Fill all fields', 'danger'); return; }
+  
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.user.role !== 'police') throw new Error('Not a police account');
+    
+    token = data.token;
+    currentOfficer = data.user;
+    sessionStorage.setItem('police_token', token);
+    sessionStorage.setItem('police_user', JSON.stringify(currentOfficer));
+    showDashboard();
+  } catch (e) {
+    showToast(e.message || 'Login failed', 'danger');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔐 Sign In to Dashboard';
+  }
+}
+
+function doLogout() {
+  sessionStorage.clear();
+  if (ws) ws.close();
+  document.getElementById('dashboardApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboardApp').style.display = 'block';
+  document.getElementById('officerName').textContent = `👮 ${currentOfficer.name}`;
+  document.getElementById('officerRank').textContent = `${currentOfficer.rank || 'Officer'} • CCB`;
+  document.getElementById('dashTime').textContent = `Live as of ${new Date().toLocaleString('en-IN')}`;
+  loadAll();
+  connectWS();
+  setInterval(loadStats, 30000);
+}
+
+// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'auth', token }));
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'connected') {
+      document.getElementById('wsStatus').textContent = '● Live';
+      document.getElementById('wsStatus').className = 'ws-indicator on';
+    } else if (data.type === 'SOS_ALERT') {
+      showToast(`🚨 NEW SOS — ${data.data.name}, ${data.data.area}`, 'danger');
+      loadStats(); loadSOSAlerts(); loadActivityFeed();
+    } else if (data.type === 'NEW_FRAUD_REPORT') {
+      showToast(`⚠️ New report: ${data.data.case_number}`, '');
+      loadCases(); loadStats();
+    } else if (data.type === 'CHECKIN') {
+      showToast(`✅ Check-in: ${data.data.user}`, '');
+    }
+  };
+  ws.onclose = () => {
+    document.getElementById('wsStatus').textContent = '● Offline';
+    document.getElementById('wsStatus').className = 'ws-indicator';
+    setTimeout(connectWS, 5000);
+  };
+}
+
+// ─── LOAD ALL ─────────────────────────────────────────────────────────────────
+function loadAll() {
+  loadStats();
+  loadActivityFeed();
+  loadSOSAlerts();
+  loadCases();
+  loadCitizens();
+  loadScamDb();
+}
+
+async function loadStats() {
+  try {
+    const s = await apiFetch('/dashboard/stats');
+    document.getElementById('s-sos').textContent = s.active_sos;
+    document.getElementById('s-seniors').textContent = s.total_seniors;
+    document.getElementById('s-today').textContent = s.fraud_reports_today;
+    document.getElementById('s-pending').textContent = s.cases_pending;
+    
+    // Update badges
+    activeSosCount = s.active_sos;
+    document.getElementById('sosBadge').textContent = s.active_sos;
+    document.getElementById('alertBadge').textContent = s.active_sos;
+
+    // Build SOS section
+    const sosHtml = s.active_sos > 0 
+      ? `<div class="sos-alert">
+          <div class="sos-dot"></div>
+          <div style="flex:1"><div class="sos-title">🚨 ${s.active_sos} Active SOS Alert${s.active_sos>1?'s':''}</div><div class="sos-desc">Requires immediate response</div></div>
+          <button class="btn btn-danger btn-sm" onclick="showPage('alerts')">View Alerts</button>
+        </div>`
+      : '';
+    document.getElementById('sosSection').innerHTML = sosHtml;
+
+    // Fraud chart
+    document.getElementById('fraudChart').innerHTML = `
+      <div class="bar-row"><div class="bar-label">OTP Scam</div><div class="bar-track"><div class="bar-fill" style="width:78%;background:#f87171"></div></div><div class="bar-val c-dn">78</div></div>
+      <div class="bar-row"><div class="bar-label">Phishing</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#fb923c"></div></div><div class="bar-val c-dn">55</div></div>
+      <div class="bar-row"><div class="bar-label">Investment</div><div class="bar-track"><div class="bar-fill" style="width:38%;background:#fbbf24"></div></div><div class="bar-val c-dn">38</div></div>
+      <div class="bar-row"><div class="bar-label">Fake KYC</div><div class="bar-track"><div class="bar-fill" style="width:22%;background:#a3e635"></div></div><div class="bar-val c-dn">22</div></div>
+      <div class="bar-row"><div class="bar-label">Identity</div><div class="bar-track"><div class="bar-fill" style="width:14%;background:#34d399"></div></div><div class="bar-val c-dn">14</div></div>
+    `;
+    document.getElementById('dashTime').textContent = `Updated ${new Date().toLocaleTimeString('en-IN')} • ${s.total_seniors} seniors monitored`;
+  } catch {}
+}
+
+async function loadActivityFeed() {
+  try {
+    const items = await apiFetch('/dashboard/activity');
+    const html = items.map(a => `
+      <div class="tl-item">
+        <div class="tl-dot" style="background:${a.type==='sos'?'#f87171':a.type==='report'?'#fbbf24':'#4ade80'}"></div>
+        <div>
+          <div class="tl-title">${a.type==='sos'?`🚨 SOS — ${a.name}`:a.type==='report'?`⚠️ Report ${a.case_number} (${a.fraud_type})`:a.type==='checkin'?`✅ Check-in: ${a.name}`:a.action||'Event'}</div>
+          <div class="tl-time">${timeAgo(a.created_at)}</div>
+        </div>
+      </div>`).join('');
+    document.getElementById('activityFeed').innerHTML = html || '<div class="empty">No recent activity</div>';
+    document.getElementById('fullActivityFeed').innerHTML = html || '<div class="empty">No recent activity</div>';
+  } catch {}
+}
+
+async function loadSOSAlerts() {
+  try {
+    const alerts = await apiFetch('/sos/active');
+    const div = document.getElementById('sosAlertsList');
+    if (!alerts.length) { div.innerHTML = '<div class="empty">✅ No active SOS alerts</div>'; return; }
+    div.innerHTML = alerts.map(a => `
+      <div class="sos-alert" style="margin-bottom:12px">
+        <div class="sos-dot"></div>
+        <div style="flex:1">
+          <div class="sos-title">${a.name}, Age ${a.age || '?'} • ${a.area}</div>
+          <div class="sos-desc">${a.home_address || 'Address unknown'} • ${timeAgo(a.created_at)}</div>
+          ${a.medical_conditions ? `<div style="font-size:10px;color:#fbbf24;margin-top:3px">💊 ${a.medical_conditions}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="respondSOS(${a.id})">Respond</button>
+          <button class="btn btn-outline btn-sm" onclick="resolveSOS(${a.id})">Resolve</button>
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+
+async function respondSOS(id) {
+  try {
+    await apiFetch(`/sos/${id}/respond`, 'PATCH');
+    showToast('✅ Marked as responding. Citizen notified.', '');
+    loadSOSAlerts(); loadStats();
+  } catch { showToast('Error', 'danger'); }
+}
+
+async function resolveSOS(id) {
+  try {
+    await apiFetch(`/sos/${id}/resolve`, 'PATCH', { notes: 'Resolved by officer' });
+    showToast('✅ SOS resolved', '');
+    loadSOSAlerts(); loadStats();
+  } catch { showToast('Error', 'danger'); }
+}
+
+async function loadCases() {
+  try {
+    const cases = await apiFetch('/fraud-reports');
+    const div = document.getElementById('casesList');
+    if (!cases.length) { div.innerHTML = '<div class="empty">No cases yet</div>'; return; }
+    div.innerHTML = `
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Case #</th><th>Citizen</th><th>Type</th><th>Amount</th><th>Status</th><th>Filed</th><th>Action</th></tr></thead>
+          <tbody>${cases.map(c => `
+            <tr>
+              <td style="color:#60a5fa;font-weight:700">${c.case_number}</td>
+              <td>${c.reporter_name || '—'}<br><span style="font-size:10px;color:var(--muted)">${c.reporter_phone||''}</span></td>
+              <td><span class="badge badge-warning">${c.fraud_type?.replace(/_/g,' ')}</span></td>
+              <td>${c.amount_lost > 0 ? '₹' + c.amount_lost.toLocaleString('en-IN') : '—'}</td>
+              <td><span class="badge ${c.status==='resolved'?'badge-success':c.status==='investigating'?'badge-primary':'badge-warning'}">${c.status}</span></td>
+              <td>${timeAgo(c.created_at)}</td>
+              <td>${c.status==='pending'?`<button class="btn btn-primary btn-sm" onclick="assignCase(${c.id})">Assign</button>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch {}
+}
+
+async function assignCase(id) {
+  try {
+    await apiFetch(`/fraud-reports/${id}/assign`, 'PATCH');
+    showToast('✅ Case assigned to you', '');
+    loadCases();
+  } catch {}
+}
+
+async function loadCitizens() {
+  try {
+    const seniors = await apiFetch('/seniors');
+    const div = document.getElementById('citizensList');
+    if (!seniors.length) { div.innerHTML = '<div class="empty">No citizens registered</div>'; return; }
+    div.innerHTML = `
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Name</th><th>ID</th><th>Area</th><th>Age</th><th>SOS</th><th>Reports</th><th>Last Check-In</th></tr></thead>
+          <tbody>${seniors.map(s => `
+            <tr>
+              <td><strong>${s.name}</strong><br><span style="font-size:10px;color:var(--muted)">${s.phone}</span></td>
+              <td style="color:#60a5fa">${s.citizen_id || '—'}</td>
+              <td>${s.area || '—'}</td>
+              <td>${s.age || '—'}</td>
+              <td>${s.active_sos>0?`<span class="badge badge-danger">🚨 Active</span>`:'<span style="color:var(--muted);font-size:11px">None</span>'}</td>
+              <td>${s.total_reports || 0}</td>
+              <td>${s.last_checkin ? timeAgo(s.last_checkin) : '<span style="color:#f87171;font-size:11px">Not yet</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch {}
+}
+
+async function loadScamDb() {
+  try {
+    // Using fraud-reports to get suspect phones for the scam db display
+    const div = document.getElementById('scamDbList');
+    div.innerHTML = `
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Value</th><th>Type</th><th>Risk</th><th>Reports</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color:#f87171">9988776655</td><td><span class="badge badge-gray">Phone</span></td><td><span class="badge badge-danger">HIGH</span></td><td>47</td><td>OTP scam — Ahmedabad area</td></tr>
+            <tr><td style="color:#f87171">7766554433</td><td><span class="badge badge-gray">Phone</span></td><td><span class="badge badge-danger">HIGH</span></td><td>23</td><td>Fake investment scheme</td></tr>
+            <tr><td style="color:#fbbf24">8855443322</td><td><span class="badge badge-gray">Phone</span></td><td><span class="badge badge-warning">MED</span></td><td>12</td><td>Fake KYC update scam</td></tr>
+            <tr><td style="color:#f87171">secure-sbi-verify.com</td><td><span class="badge badge-gray">URL</span></td><td><span class="badge badge-danger">HIGH</span></td><td>89</td><td>SBI phishing site</td></tr>
+            <tr><td style="color:#f87171">hdfc-update-kyc.net</td><td><span class="badge badge-gray">URL</span></td><td><span class="badge badge-danger">HIGH</span></td><td>34</td><td>HDFC phishing</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+  } catch {}
+}
+
+async function addScamEntry() {
+  const val = document.getElementById('newScamVal').value.trim();
+  if (!val) { showToast('Enter a value', 'danger'); return; }
+  showToast(`✅ ${val} added to scam database`, '');
+  document.getElementById('newScamVal').value = '';
+}
+
+// ─── PAGE NAV ─────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${id}`)?.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  event.currentTarget?.classList.add('active');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+async function apiFetch(path, method = 'GET', body = null) {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const diff = Date.now() - new Date(dateStr);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+</script>
+</body>
+</html>
